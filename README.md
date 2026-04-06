@@ -11,6 +11,32 @@
 
 ---
 
+## 🖥️ Dashboard Screenshots
+
+### 📈 Tab 1 — Sales Overview
+![Overview Dashboard](images/01_overview_tab.png)
+> KPI cards, weekly sales trend with 4-week moving average, monthly seasonality, store-type breakdown, and top-10 departments.
+
+---
+
+### 🔮 Tab 2 — Demand Forecast
+![Forecast Dashboard](images/02_forecast_tab.png)
+> XGBoost predictions vs actual sales over the 26-week test period, predicted vs actual scatter plot, and residual distribution.
+
+---
+
+### 📦 Tab 3 — Inventory Management
+![Inventory Dashboard](images/03_inventory_tab.png)
+> SKU status donut chart, days-of-cover histogram, and actionable reorder decision table with EOQ-based suggested order quantities.
+
+---
+
+### 🧠 Tab 4 — Model Performance
+![Model Performance Dashboard](images/04_model_performance_tab.png)
+> Side-by-side comparison of Linear Regression, Random Forest, and XGBoost. RMSE bar chart and XGBoost feature importance ranking.
+
+---
+
 ## 🎯 Problem Statement
 
 Retail companies lose billions annually from two inventory extremes:
@@ -71,6 +97,12 @@ This system solves both using ML-driven demand forecasting + economic inventory 
 
 ```
 retail-demand-forecasting/
+│
+├── images/                         # Dashboard screenshots for README
+│   ├── 01_overview_tab.png
+│   ├── 02_forecast_tab.png
+│   ├── 03_inventory_tab.png
+│   └── 04_model_performance_tab.png
 │
 ├── data/
 │   ├── raw/                        # Raw CSVs (generated or from Kaggle)
@@ -140,8 +172,6 @@ python data/generate_sample_data.py
 # ✅ walmart_sales.csv  → 39,000 rows
 # ✅ stores.csv         → 10 stores
 ```
-
-**Or use Kaggle data** (see [Dataset](#-dataset) section below).
 
 ### 3. Train Models
 
@@ -215,13 +245,10 @@ Generates Walmart-style data with realistic:
 
 ## 📦 Business Logic
 
-### Inventory Formulae
-
 **Safety Stock:**
 ```
 SS = Z × σ_demand × √(lead_time_weeks)
 ```
-where Z = 1.645 at 95% service level.
 
 **Reorder Point (ROP):**
 ```
@@ -232,7 +259,6 @@ ROP = (avg_daily_demand × lead_time_days) + Safety_Stock
 ```
 EOQ = √(2 × D × S / H)
 ```
-where D=annual demand, S=order cost, H=holding cost.
 
 **SKU Status Classification:**
 ```python
@@ -252,8 +278,6 @@ else:
 
 Base URL: `http://localhost:5000`
 
-### Endpoints
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Service health check |
@@ -263,8 +287,6 @@ Base URL: `http://localhost:5000`
 | POST | `/api/v1/inventory/decisions` | Get reorder recommendations |
 | GET | `/api/v1/summary` | Global KPIs |
 
-### Example Requests
-
 **Predict Demand:**
 ```bash
 curl -X POST http://localhost:5000/api/v1/predict \
@@ -272,147 +294,40 @@ curl -X POST http://localhost:5000/api/v1/predict \
   -d '{"store": 1, "dept": 5, "weeks_ahead": 4}'
 ```
 
-**Response:**
-```json
-{
-  "store": 1,
-  "dept": 5,
-  "forecasts": [
-    {"forecast_date": "2024-01-05", "week_ahead": 1, "predicted_sales": 14532.80},
-    {"forecast_date": "2024-01-12", "week_ahead": 2, "predicted_sales": 14218.43}
-  ]
-}
-```
-
-**Inventory Decisions:**
-```bash
-curl -X POST http://localhost:5000/api/v1/inventory/decisions \
-  -H "Content-Type: application/json" \
-  -d '{"stores": [1, 2], "service_level": 0.95}'
-```
-
 ---
 
 ## 🐳 Docker Deployment
 
-### Single Container
-
-```bash
-cd docker/
-docker build -t retail-forecast -f Dockerfile ..
-docker run -p 8501:8501 retail-forecast
-```
-
-### Full Stack (Dashboard + API + Scheduler)
-
 ```bash
 cd docker/
 docker-compose up --build
-
 # Dashboard → http://localhost:8501
 # API       → http://localhost:5000
 ```
 
 ---
 
-## ☁️ Cloud Deployment
-
-### Render (Free Tier — Recommended)
+## ☁️ Cloud Deployment (Render — Free)
 
 1. Push to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your repo
-4. Settings:
+2. New Web Service on [render.com](https://render.com)
+3. Build Command:
    ```
-   Build Command:  pip install -r requirements.txt && python data/generate_sample_data.py && python scripts/train_pipeline.py
-   Start Command:  streamlit run app/streamlit_app.py --server.port $PORT --server.address 0.0.0.0
+   pip install -r requirements.txt && python data/generate_sample_data.py && python scripts/train_pipeline.py
    ```
-5. Deploy → Live in ~5 minutes
-
-### Railway
-
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-railway login
-railway init
-railway up
-```
-
-### AWS EC2
-
-```bash
-# On EC2 instance (Ubuntu 22.04):
-git clone <your-repo>
-cd retail-demand-forecasting
-pip install -r requirements.txt
-python data/generate_sample_data.py
-python scripts/train_pipeline.py
-
-# Run in background with nohup
-nohup streamlit run app/streamlit_app.py --server.port 8501 &
-nohup gunicorn -w 4 -b 0.0.0.0:5000 "api.flask_api:create_app()" &
-```
-
----
-
-## ⏰ Automation
-
-### Linux Cron (recommended)
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add these lines:
-# Predict every Monday 6am
-0 6 * * 1  cd /path/to/project && python scripts/cron_job.py >> logs/cron.log 2>&1
-
-# Retrain every Sunday 2am
-0 2 * * 0  cd /path/to/project && python scripts/cron_job.py --retrain >> logs/cron.log 2>&1
-```
-
-### APScheduler (Python-based)
-
-```bash
-python scripts/cron_job.py --scheduler
-# Runs prediction: every Monday 06:00 UTC
-# Runs retraining: every Sunday 02:00 UTC
-```
+4. Start Command:
+   ```
+   streamlit run app/streamlit_app.py --server.port $PORT --server.address 0.0.0.0
+   ```
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific test file
-pytest tests/test_business_logic.py -v
-
-# Run with coverage
-pytest tests/ --cov=src --cov-report=html
+pytest tests/ -v          # Run all 36 tests
+pytest tests/ --cov=src   # With coverage report
 ```
-
-**Test Coverage:**
-- `test_preprocessing.py` → 11 tests (data loading, cleaning, splitting)
-- `test_models.py`        → 9 tests (train, predict, save/load)
-- `test_business_logic.py`→ 16 tests (EOQ, ROP, SS, classification, decisions)
-
----
-
-## 📈 Dashboard Features
-
-| Tab | Features |
-|-----|----------|
-| **Overview** | Sales trend, seasonality, store-type breakdown, top departments |
-| **Demand Forecast** | Actual vs predicted, scatter plot, residual distribution |
-| **Inventory Management** | Status donut, heatmap, days-of-cover, reorder table |
-| **Model Performance** | RMSE/R² comparison bar chart, feature importances |
-
-**Filters**: Store, Department, Date Range, Service Level slider
 
 ---
 
@@ -428,7 +343,6 @@ pytest tests/ --cov=src --cov-report=html
 | API | Flask |
 | Deployment | Docker, Gunicorn |
 | Testing | Pytest |
-| CI/CD | GitHub Actions (optional) |
 
 ---
 

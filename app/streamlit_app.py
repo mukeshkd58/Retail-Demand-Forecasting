@@ -42,7 +42,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     .metric-value {
-        font-size: 2rem;
+        font-size: 1.4rem;
         font-weight: 700;
     }
     .metric-label {
@@ -140,11 +140,11 @@ def render_kpis(df_filtered, decisions_df):
     cols = st.columns(6)
     kpis = [
         ("💰 Total Sales",    f"${total_sales/1e6:.1f}M"),
-        ("📊 Avg Weekly",     f"${avg_weekly:,.0f}"),
+        ("📊 Avg Weekly",     f"${avg_weekly/1e3:.1f}K"),
         ("🔴 Critical SKUs",  str(summary["critical"])),
         ("🟠 Low Stock",      str(summary["low_stock"])),
         ("🟣 Overstock",      str(summary["overstock"])),
-        ("📦 Total Orders",   f"{summary['total_order_value']:,}"),
+        ("📦 Total Orders",   f"{summary['total_order_value']/1e6:.1f}M"),
     ]
     for col, (label, value) in zip(cols, kpis):
         col.markdown(f"""
