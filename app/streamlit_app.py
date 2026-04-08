@@ -11,23 +11,35 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# ── Auto-setup on Streamlit Cloud ──────────────────────────────
 import subprocess
+import sys
+from pathlib import Path
 
 def auto_setup():
     """Generate data and train model if not present (for cloud deploy)."""
-    model_path = Path("models/best_model.pkl")
-    data_path  = Path("data/raw/walmart_sales.csv")
+    # Absolute paths — app/ folder se root folder
+    root = Path(__file__).parent.parent
+    model_path = root / "models" / "best_model.pkl"
+    data_path  = root / "data" / "raw" / "walmart_sales.csv"
+    python     = sys.executable  # correct python path on any system
 
     if not data_path.exists():
         import streamlit as st
         st.info("⏳ Generating data... (first run only, ~10 seconds)")
-        subprocess.run(["python", "data/generate_sample_data.py"], check=True)
+        subprocess.run(
+            [python, str(root / "data" / "generate_sample_data.py")],
+            cwd=str(root),   # working directory = project root
+            check=True
+        )
 
     if not model_path.exists():
         import streamlit as st
         st.info("⏳ Training models... (first run only, ~2 minutes)")
-        subprocess.run(["python", "scripts/train_pipeline.py"], check=True)
+        subprocess.run(
+            [python, str(root / "scripts" / "train_pipeline.py")],
+            cwd=str(root),   # working directory = project root
+            check=True
+        )
         st.rerun()
 
 auto_setup()
